@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import AzPipelinesTask from './AzPipelinesTask';
-import {generateDebugProfile, appendDebugProfile} from './debugProfiles';
+import {generateDebugProfiles, appendDebugProfiles} from './debugProfiles';
 import {ensureModule} from './npmUtils';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -16,12 +16,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 			const azPipelinesTask = new AzPipelinesTask(evt.fsPath);
 
-			const profile = generateDebugProfile(azPipelinesTask);
-			appendDebugProfile(profile, workspace);
+			const profiles = generateDebugProfiles(azPipelinesTask);
+
+			if (profiles.length === 0) {
+				vscode.window.showErrorMessage(`No supported configurations found`);
+				return;
+			}
+
+			appendDebugProfiles(profiles, workspace);
 
 			ensureDebugDependencies(workspace.uri.fsPath);
 
-			vscode.window.showInformationMessage(`Debug profile ${profile.name} has been created!`);
+			profiles.forEach(p => vscode.window.showInformationMessage(`Debug profile ${p.name} has been created!`));
 
 		}
 		catch(ex) {

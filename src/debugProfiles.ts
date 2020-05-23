@@ -39,7 +39,12 @@ function ensureDebugProfilesConfigExists (debugProfilesPath: string) {
     fs.writeFileSync(debugProfilesPath, '{"version": "0.2.0", "configurations": []}');
 }
 
-export function appendDebugProfile(profile: AzTaskDebugProfile, workspace: vscode.WorkspaceFolder) {
+export function appendDebugProfiles(profiles: AzTaskDebugProfile[], workspace: vscode.WorkspaceFolder) {
+
+    if (profiles.length === 0) {
+        throw new Error('Invalid argument: profiles list is empty');
+        
+    }
 
     const debugProfilesPath = path.join(workspace.uri.fsPath, '.vscode/launch.json');
 
@@ -47,24 +52,48 @@ export function appendDebugProfile(profile: AzTaskDebugProfile, workspace: vscod
 
     const debugProfiles = parse(fs.readFileSync(debugProfilesPath).toString());
 
-    debugProfiles.configurations.push(profile.definition);
+    debugProfiles.configurations = debugProfiles.configurations.concat(profiles.map(x=>x.definition));
 
     const updatedProfiles = stringify(debugProfiles, null, 4);
 
     fs.writeFileSync(debugProfilesPath, updatedProfiles);
 }
 
-export function generateDebugProfile(azPipelinesTask: AzPipelinesTask): AzTaskDebugProfile {
+export function generateDebugProfiles(azPipelinesTask: AzPipelinesTask): AzTaskDebugProfile[] {
 
-    if (!azPipelinesTask.taskDefinition.execution.Node) {
-        throw new Error(`Unsupported execution type, expected type Node, but found: ${Object.keys(azPipelinesTask.taskDefinition.execution)}`);
-    }
+    const profiles: AzTaskDebugProfile[] = [];
+
+    const taskDefinition: any = azPipelinesTask.taskDefinition;
     
-    const executable = azPipelinesTask.taskDefinition.execution.Node.target.replace(".js", ".ts");
+    [
+        'execution',
+        'prejobexecution',
+        'postjobexecution',
+    ].forEach(x => {
+
+        if(!taskDefinition[x]) {
+            return;
+        }
+
+        if (!taskDefinition[x].Node) {
+            throw new Error(`Unsupported execution type, expected type Node, but found: ${Object.keys(azPipelinesTask.taskDefinition.execution)}`);
+        }
+
+        profiles.push(generateDebugProfile(`Debug ${azPipelinesTask.taskName}-${x}`, taskDefinition[x].Node, azPipelinesTask));
+
+    }); 
+
+    return profiles;
+
+}
+
+function generateDebugProfile(name: string, section: any, azPipelinesTask: AzPipelinesTask): AzTaskDebugProfile {
+    
+    const executable = section.target.replace(".js", ".ts");
 
 	let debugDefinitionTemplate = 
 	{
-		name: `Debug ${azPipelinesTask.taskName}`,
+		name: name,
 		type: "node",
 		request: "launch",
 		args: ["${workspaceRoot}/Tasks/${TaskName}/${Executable}"],
@@ -97,5 +126,5 @@ export function generateDebugProfile(azPipelinesTask: AzPipelinesTask): AzTaskDe
 		//throw new Error(`Unsupported input type: ${item.type}`);
 	});
 
-	return new AzTaskDebugProfile(azPipelinesTask.taskName, debugDefinition, azPipelinesTask.taskCodebasePath);
+	return new AzTaskDebugProfile(name, debugDefinition, azPipelinesTask.taskCodebasePath);
 }
