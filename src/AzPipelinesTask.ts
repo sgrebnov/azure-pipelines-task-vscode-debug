@@ -6,6 +6,7 @@ import {TaskDefinition} from 'vso-node-api/interfaces/TaskAgentInterfaces';
 export default class AzPipelinesTask {
     taskDefinition: TaskDefinition;
     taskName: string;
+    taskCodebasePath: string;
 
     constructor(taskDefinitionPath: string) {
 
@@ -15,7 +16,8 @@ export default class AzPipelinesTask {
 
         this.taskDefinition = require(taskDefinitionPath);
         // we use folder name to distinct V0 vs V1, etc
-		this.taskName = path.basename(path.dirname(taskDefinitionPath));
+        this.taskName = path.basename(path.dirname(taskDefinitionPath));
+        this.taskCodebasePath = path.join(taskDefinitionPath, '..');
     }
 
 }

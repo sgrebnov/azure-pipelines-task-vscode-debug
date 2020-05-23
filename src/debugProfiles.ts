@@ -11,19 +11,40 @@ import {TaskInputDefinition} from 'vso-node-api/interfaces/TaskAgentInterfaces';
 
 import AzPipelinesTask from './AzPipelinesTask';
 
-export class DebugProfile {
+export class AzTaskDebugProfile {
     name: string;
     definition: string;
+    taskCodebasePath: string;
 
-    constructor(name: string, definition: string) {
+    constructor(name: string, definition: string, taskCodebasePath: string) {
         this.name = name;
         this.definition = definition;
+        this.taskCodebasePath = taskCodebasePath;
     }
 }
 
-export function appendDebugProfile(profile: DebugProfile, workspace: vscode.WorkspaceFolder) {
+function ensureDebugProfilesConfigExists (debugProfilesPath: string) {
+
+    if (fs.existsSync(debugProfilesPath)) {
+        return;
+    }
+
+    const vsCodeDir = path.join(debugProfilesPath, '..');
+
+    if (!fs.existsSync(vsCodeDir)) {
+        fs.mkdirSync(vsCodeDir);
+    }
+
+    // generate empty launch.json if it does not exist
+    fs.writeFileSync(debugProfilesPath, '{"version": "0.2.0", "configurations": []}');
+}
+
+export function appendDebugProfile(profile: AzTaskDebugProfile, workspace: vscode.WorkspaceFolder) {
 
     const debugProfilesPath = path.join(workspace.uri.fsPath, '.vscode/launch.json');
+
+    ensureDebugProfilesConfigExists(debugProfilesPath);
+
     const debugProfiles = parse(fs.readFileSync(debugProfilesPath).toString());
 
     debugProfiles.configurations.push(profile.definition);
@@ -33,7 +54,7 @@ export function appendDebugProfile(profile: DebugProfile, workspace: vscode.Work
     fs.writeFileSync(debugProfilesPath, updatedProfiles);
 }
 
-export function generateDebugProfile(azPipelinesTask: AzPipelinesTask): DebugProfile {
+export function generateDebugProfile(azPipelinesTask: AzPipelinesTask): AzTaskDebugProfile {
 
     if (!azPipelinesTask.taskDefinition.execution.Node) {
         throw new Error(`Unsupported execution type, expected type Node, but found: ${Object.keys(azPipelinesTask.taskDefinition.execution)}`);
@@ -76,5 +97,5 @@ export function generateDebugProfile(azPipelinesTask: AzPipelinesTask): DebugPro
 		//throw new Error(`Unsupported input type: ${item.type}`);
 	});
 
-	return new DebugProfile(azPipelinesTask.taskName, debugDefinition);
+	return new AzTaskDebugProfile(azPipelinesTask.taskName, debugDefinition, azPipelinesTask.taskCodebasePath);
 }
