@@ -79,7 +79,7 @@ export function generateDebugProfiles(azPipelinesTask: AzPipelinesTask): AzTaskD
             throw new Error(`Unsupported execution type, expected type Node, but found: ${Object.keys(azPipelinesTask.taskDefinition.execution)}`);
         }
 
-        profiles.push(generateDebugProfile(`Debug ${azPipelinesTask.taskName}-${x}`, taskDefinition[x].Node, azPipelinesTask));
+        profiles.push(generateDebugProfile(`${azPipelinesTask.taskName}-${x}`, taskDefinition[x].Node, azPipelinesTask));
 
     }); 
 
@@ -109,7 +109,7 @@ function generateDebugProfile(name: string, section: any, azPipelinesTask: AzPip
 	azPipelinesTask.taskDefinition.inputs.forEach((item: TaskInputDefinition) => {
 		if (['string', 'boolean', 'filePath', 'multiLine'].indexOf(item.type) !== -1) {
 			const name = `INPUT_${item.name}`.toUpperCase();
-			debugDefinition.env[name] = item.defaultValue || "";
+			debugDefinition.env[name] = item.defaultValue || '';
 			return;
 		}
 
@@ -119,7 +119,14 @@ function generateDebugProfile(name: string, section: any, azPipelinesTask: AzPip
 			debugDefinition.env['ENDPOINT_AUTH_PARAMETER_SSH_PASSWORD'] = '';
 			debugDefinition.env['ENDPOINT_DATA_SSH_HOST'] = '';
 			return;
-		}
+        }
+
+        if (item.type === 'secureFile') {
+            debugDefinition.env['INPUT_SSHKEYSECUREFILE'] = item.defaultValue || '';
+            debugDefinition.env['SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'] = '';
+            debugDefinition.env['ENDPOINT_AUTH_PARAMETER_SYSTEMVSSCONNECTION_ACCESSTOKEN'] = '';
+            return;
+        }
 
         vscode.window.showErrorMessage(`Unknown input type: ${item.type}; Skipped`);
 

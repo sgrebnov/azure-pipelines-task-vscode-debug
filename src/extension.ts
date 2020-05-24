@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			ensureDebugDependencies(workspace.uri.fsPath);
 
-			profiles.forEach(p => vscode.window.showInformationMessage(`Debug profile ${p.name} has been created!`));
+			profiles.forEach(p => vscode.window.showInformationMessage(`Added Debug profile: ${p.name}`));
 
 		}
 		catch(ex) {
