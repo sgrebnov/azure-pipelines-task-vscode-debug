@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import AzPipelinesTask from './AzPipelinesTask';
 import {generateDebugProfiles, appendDebugProfiles} from './debugProfiles';
-import {ensureModule} from './npmUtils';
+import * as npmUtils from './npmUtils';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -25,9 +25,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 			appendDebugProfiles(profiles, workspace);
 
-			ensureDebugDependencies(workspace.uri.fsPath);
+			ensureGlobalDebugDependencies(workspace.uri.fsPath);
 
-			profiles.forEach(p => vscode.window.showInformationMessage(`Added Debug profile: ${p.name}`));
+			profiles.forEach(p => {
+				p.installLocalDebugDependencies();
+				vscode.window.showInformationMessage(`Added Debug profile: ${p.name}`);
+			});
 
 		}
 		catch(ex) {
@@ -38,9 +41,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 }
 
-function ensureDebugDependencies(root: string) {
-	ensureModule(root, 'ts-node');
-	ensureModule(root, '@types/node');
+function ensureGlobalDebugDependencies(root: string) {
+	npmUtils.ensureModule(root, 'ts-node');
+	npmUtils.ensureModule(root, '@types/node');
 }
 
 // this method is called when your extension is deactivated

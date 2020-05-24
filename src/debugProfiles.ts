@@ -2,6 +2,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 
+import * as npmUtils from './npmUtils';
+
 const {
 	parse,
 	stringify,
@@ -11,6 +13,7 @@ import {TaskInputDefinition} from 'vso-node-api/interfaces/TaskAgentInterfaces';
 
 import AzPipelinesTask from './AzPipelinesTask';
 
+// TODO: move to separate file
 export class AzTaskDebugProfile {
     name: string;
     definition: string;
@@ -20,6 +23,10 @@ export class AzTaskDebugProfile {
         this.name = name;
         this.definition = definition;
         this.taskCodebasePath = taskCodebasePath;
+    }
+
+    installLocalDebugDependencies() {
+        npmUtils.installLocalDependencies(this.taskCodebasePath);
     }
 }
 
