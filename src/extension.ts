@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('az-pipelines-extension.generateDebugConfig', (evt) => {
 		try {
 
-			const workspace = vscode.workspace.getWorkspaceFolder(evt._formatted);
+			const workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(evt._formatted));
 			if (!workspace) {
 				return;
 			}
